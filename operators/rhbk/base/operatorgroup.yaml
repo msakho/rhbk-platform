@@ -1,0 +1,12 @@
+# The RHBK operator supports only OwnNamespace/SingleNamespace: one install per namespace.
+# A namespace must contain exactly one OperatorGroup.
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: rhbk-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  targetNamespaces:
+    - NAMESPACE_PLACEHOLDER   # replaced by the overlay
+  upgradeStrategy: Default

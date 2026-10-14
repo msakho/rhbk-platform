@@ -1,0 +1,19 @@
+# RHBK operator in namespace rhbk (prod).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rhbk-operator-prod
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/msakho/rhbk-platform.git
+    targetRevision: main
+    path: operators/rhbk/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rhbk
+  syncPolicy:
+    # Platform: manual sync (review the diff, then Sync).
+    syncOptions:
+      - ServerSideApply=true

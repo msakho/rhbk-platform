@@ -1,0 +1,32 @@
+# Platform project (admins): cluster-scoped resources allowed, unlike the application project "rhbk".
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: openshift-gitops
+spec:
+  description: RHBK platform (operators, External Secrets, Vault)
+  sourceRepos:
+    - https://github.com/msakho/rhbk-platform.git
+    - https://helm.releases.hashicorp.com
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: rhbk
+    - server: https://kubernetes.default.svc
+      namespace: rhbk-dev
+    - server: https://kubernetes.default.svc
+      namespace: external-secrets-operator
+    - server: https://kubernetes.default.svc
+      namespace: vault
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: operator.openshift.io
+      kind: ExternalSecretsConfig
+    - group: external-secrets.io
+      kind: ClusterSecretStore
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding     # Vault chart: auth-delegator for the Kubernetes auth method
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

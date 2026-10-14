@@ -1,0 +1,10 @@
+# AllNamespaces mode: no targetNamespaces. Name of the OperatorGroup created by the console (adopted).
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: external-secrets-operator-xlnvn
+  namespace: external-secrets-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  upgradeStrategy: Default

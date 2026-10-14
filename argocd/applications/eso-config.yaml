@@ -1,0 +1,19 @@
+# ESO operand (ExternalSecretsConfig) and connection to Vault (ClusterSecretStore). Needs eso-operator and vault.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eso-config
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/msakho/rhbk-platform.git
+    targetRevision: main
+    path: eso
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-secrets-operator
+  syncPolicy:
+    # Platform: manual sync (review the diff, then Sync).
+    syncOptions:
+      - ServerSideApply=true

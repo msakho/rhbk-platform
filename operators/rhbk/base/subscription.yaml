@@ -1,0 +1,13 @@
+# Channel pinned to the minor version: the operator version must match the Keycloak image (26.6).
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: rhbk-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  channel: stable-v26.6
+  name: rhbk-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic

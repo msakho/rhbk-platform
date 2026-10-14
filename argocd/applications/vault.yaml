@@ -1,0 +1,28 @@
+# HashiCorp Vault (Helm chart) with values from this repository (multi-source Application).
+# Init, unseal and Vault configuration (KV, Kubernetes auth, policy, role) stay manual: see README.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: openshift-gitops
+spec:
+  project: platform
+  sources:
+    - repoURL: https://helm.releases.hashicorp.com
+      chart: vault
+      targetRevision: 0.34.1
+      helm:
+        releaseName: vault
+        valueFiles:
+          - $values/vault/values.yaml
+    - repoURL: https://github.com/msakho/rhbk-platform.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    # Platform: manual sync (review the diff, then Sync).
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,5 @@
+# Clé de descellement et token root de Vault, clés privées, certificats
+vault-init.json
+*.key
+*.pem
+*.cer

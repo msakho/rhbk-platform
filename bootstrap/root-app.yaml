@@ -1,0 +1,20 @@
+# App of apps for the platform: apply once by hand (oc apply -f bootstrap/root-app.yaml).
+# It only creates the AppProject "platform" and the Applications; each Application is synced manually.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-root
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/msakho/rhbk-platform.git
+    targetRevision: main
+    path: argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

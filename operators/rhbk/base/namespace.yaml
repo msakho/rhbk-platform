@@ -1,0 +1,10 @@
+# Name set by the overlay (Kustomize "namespace" also renames Namespace objects).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: NAMESPACE_PLACEHOLDER
+  labels:
+    # Lets the openshift-gitops instance manage the application resources in this namespace.
+    argocd.argoproj.io/managed-by: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
