@@ -80,8 +80,14 @@ actuelle.
 4. Vault était installé avec la CLI Helm : ne plus utiliser `helm upgrade` ; ArgoCD gère maintenant ces
    ressources. Les Secrets `sh.helm.release.v1.vault.*` du namespace `vault` ne servent plus et peuvent
    être supprimés.
-5. Le chart Vault contient un pod de test Helm (`helm.sh/hook: test`), jamais créé par l'installation
-   actuelle. Si ArgoCD le fait apparaître lors de la première synchro, il est sans effet sur Vault.
+5. Le chart Vault contient un pod de test Helm (`helm.sh/hook: test`). ArgoCD l'ignore : l'Application
+   `vault` est directement `Synced`.
+6. **Namespaces repris d'un dépôt applicatif** : si une Application applicative gérait le namespace
+   (`CreateNamespace` + `managedNamespaceMetadata`), retirer d'abord ces options de son côté, puis supprimer
+   l'annotation qu'elle avait posée, sinon `rhbk-operator-<env>` reste `OutOfSync` sur le Namespace :
+   ```bash
+   oc annotate ns rhbk-dev argocd.argoproj.io/sync-options-
+   ```
 
 ## Vault : étapes manuelles
 
@@ -94,8 +100,9 @@ Ce qui n'est pas déclaratif dans ce dépôt (détail des commandes : guide de `
 | Configurer : KV v2 `secret/`, auth Kubernetes, politique `rhbk-read`, rôle `external-secrets` | une fois | annexe A.5 |
 | Ranger les valeurs d'un environnement (`secret/rhbk/<env>/...`) | par environnement | annexe A.7 |
 
-**Sauvegarder `vault-init.json`** : sans la clé de descellement, les données de Vault sont
-irrécupérables.
+`vault-init.json` (clé de descellement et token root) est conservé **dans le dossier local de ce dépôt**
+(`/usr/local/dev/rhbk-platform`), ignoré par git ; les commandes manuelles se lancent depuis ce dossier.
+**Le sauvegarder** : sans la clé de descellement, les données de Vault sont irrécupérables.
 
 ## Ajouter un environnement (exemple : `qualif`)
 
