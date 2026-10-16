@@ -25,6 +25,7 @@ argocd/
     eso-operator.yaml            operators/eso                -> namespace external-secrets-operator
     vault.yaml                   chart Helm hashicorp/vault 0.34.1 + vault/values.yaml -> namespace vault
     eso-config.yaml              eso/ (ExternalSecretsConfig + ClusterSecretStore)
+    platform-monitoring.yaml     monitoring/ -> surveillance des projets utilisateur + alertes plateforme
 operators/
   rhbk/base/                     Namespace, OperatorGroup, Subscription (canal stable-v26.6)
   rhbk/overlays/prod|dev/        namespace, nom de l'OperatorGroup existant
@@ -34,6 +35,12 @@ eso/
   clustersecretstore.yaml        vault-store : ESO -> Vault (auth Kubernetes)
 vault/
   values.yaml                    Vault 1 nœud, stockage Raft sur PVC, route
+monitoring/
+  cluster-monitoring-config.yaml active la surveillance des projets utilisateur (enableUserWorkload)
+  eso-servicemonitor.yaml        collecte des métriques ESO
+  eso-alerts.yaml                ExternalSecretNotSynced, ClusterSecretStoreNotReady
+  vault-alerts.yaml              VaultSealedOrDown (pod Vault non prêt = scellé)
+  argocd-alerts.yaml             ArgoCDApplicationUnhealthy
 ```
 
 ## Choix
@@ -61,7 +68,8 @@ vault/
 | 4 | **Manuel** : initialiser, desceller et configurer Vault, ranger les valeurs | voir « Vault : étapes manuelles » |
 | 5 | Sync `eso-config` | `oc get clustersecretstore vault-store` → `Valid` |
 | 6 | Sync `rhbk-operator-prod`, `rhbk-operator-dev` | CSV `rhbk-operator` en `Succeeded` dans chaque namespace |
-| 7 | Dépôt `rhbk-gitops` : bootstrap applicatif | voir son guide |
+| 7 | Sync `platform-monitoring` | pods `prometheus-user-workload-*` et `thanos-ruler-user-workload-*` en `Running` |
+| 8 | Dépôt `rhbk-gitops` : bootstrap applicatif | voir son guide |
 
 Les annotations `SkipDryRunOnMissingResource` permettent de créer les Applications avant que les CRD
 (ESO) n'existent ; la synchro de `eso-config` doit simplement venir après `eso-operator`.
@@ -88,6 +96,20 @@ actuelle.
    ```bash
    oc annotate ns rhbk-dev argocd.argoproj.io/sync-options-
    ```
+
+## Surveillance
+
+`platform-monitoring` active la surveillance des projets utilisateur (sans elle, les ServiceMonitors et
+PrometheusRules hors des namespaces `openshift-*` sont ignorés) et ajoute les alertes de la plateforme.
+Les alertes Keycloak sont dans le dépôt applicatif (guide, sections 5.6 et 15.6). Alertes visibles dans
+la console : **Observe → Alerting**. Aucun destinataire de notification n'est encore configuré.
+
+- **Vault** n'expose pas de métriques : un Vault scellé est détecté par son pod non prêt.
+- **ESO** : les NetworkPolicies de l'opérateur autorisent déjà la collecte depuis
+  `openshift-user-workload-monitoring` ; le namespace de chaque ExternalSecret est dans le label
+  `exported_namespace`.
+- **ArgoCD** : `openshift-gitops` est un namespace plateforme ; sa règle est évaluée par le Prometheus de
+  la plateforme.
 
 ## Vault : étapes manuelles
 
