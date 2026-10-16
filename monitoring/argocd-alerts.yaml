@@ -1,0 +1,22 @@
+# openshift-gitops is a platform namespace (openshift.io/cluster-monitoring=true): this rule is
+# evaluated by the platform Prometheus, which scrapes ArgoCD. The GitOps operator only alerts on
+# OutOfSync (ArgoCDSyncAlert); this adds health.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: argocd-health-alerts
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  groups:
+    - name: argocd-health
+      rules:
+        - alert: ArgoCDApplicationUnhealthy
+          expr: argocd_app_info{namespace="openshift-gitops", health_status=~"Degraded|Missing|Unknown"} > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ArgoCD Application {{ $labels.name }} is {{ $labels.health_status }}"
+            description: "Check the Application in the ArgoCD console (App Details / Events)."

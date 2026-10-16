@@ -1,0 +1,31 @@
+# Evaluated by the user workload Thanos Ruler (rules only see metrics of their own namespace:
+# here the ESO metrics, which carry the ExternalSecret namespace as "exported_namespace").
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: external-secrets-alerts
+  namespace: external-secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  groups:
+    - name: external-secrets
+      rules:
+        - alert: ExternalSecretNotSynced
+          # Typical after a cluster restart: Vault was sealed, ESO backs off and does not retry
+          # right after the unseal. Fix: force-sync (guide, section 15.5).
+          expr: externalsecret_status_condition{condition="Ready", status="False"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ExternalSecret {{ $labels.exported_namespace }}/{{ $labels.name }} is not synced"
+            description: "The Kubernetes Secret is no longer refreshed from Vault (the existing value is kept). Check vault-store, then force a resync."
+        - alert: ClusterSecretStoreNotReady
+          expr: clustersecretstore_status_condition{condition="Ready", status="False"} == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ClusterSecretStore {{ $labels.name }} is not ready"
+            description: "ESO cannot read Vault: Vault sealed or down, network policy, or Kubernetes auth. See guide section 16."

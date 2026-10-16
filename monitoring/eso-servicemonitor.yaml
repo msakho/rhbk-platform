@@ -1,0 +1,17 @@
+# Scrapes the ESO controller (externalsecret_status_condition, clustersecretstore_status_condition...).
+# The ESO NetworkPolicies already allow port 8080 from openshift-user-workload-monitoring.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: external-secrets
+  namespace: external-secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: external-secrets
+      app.kubernetes.io/name: external-secrets
+  endpoints:
+    - port: metrics
+      interval: 60s

@@ -1,0 +1,22 @@
+# Vault exposes no metrics here: a sealed Vault is detected through the pod readiness
+# (the readiness probe fails while Vault is sealed). kube-state-metrics series of the "vault"
+# namespace are visible to rules of this namespace (user workload Thanos Ruler).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vault-alerts
+  namespace: vault
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  groups:
+    - name: vault
+      rules:
+        - alert: VaultSealedOrDown
+          expr: sum(kube_pod_status_ready{namespace="vault", pod=~"vault-[0-9]+", condition="true"}) == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Vault is sealed or not ready"
+            description: "After a restart, Vault must be unsealed (guide, section 15.5). Until then ESO cannot refresh secrets."
