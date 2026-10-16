@@ -18,6 +18,12 @@ spec:
       namespace: external-secrets-operator
     - server: https://kubernetes.default.svc
       namespace: vault
+    - server: https://kubernetes.default.svc
+      namespace: openshift-monitoring
+    - server: https://kubernetes.default.svc
+      namespace: external-secrets
+    - server: https://kubernetes.default.svc
+      namespace: openshift-gitops
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace

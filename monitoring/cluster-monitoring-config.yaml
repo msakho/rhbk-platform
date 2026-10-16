@@ -1,0 +1,12 @@
+# Enables monitoring for user-defined projects (rhbk, rhbk-dev, external-secrets, vault...):
+# without it, ServiceMonitors and PrometheusRules outside openshift-* namespaces are ignored.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  config.yaml: |
+    enableUserWorkload: true

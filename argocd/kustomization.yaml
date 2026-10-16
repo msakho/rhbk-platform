@@ -7,3 +7,4 @@ resources:
   - applications/eso-operator.yaml
   - applications/vault.yaml
   - applications/eso-config.yaml
+  - applications/platform-monitoring.yaml
