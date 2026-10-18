@@ -8,3 +8,5 @@ resources:
   - applications/vault.yaml
   - applications/eso-config.yaml
   - applications/platform-monitoring.yaml
+  - applications/grafana-operator.yaml
+  - applications/grafana.yaml

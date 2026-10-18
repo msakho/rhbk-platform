@@ -1,0 +1,51 @@
+# Official Keycloak dashboards (github.com/keycloak/keycloak-grafana-dashboard), pinned to the
+# 26.4.0 release; the operator downloads them. DS_PROMETHEUS is mapped to our datasource.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaFolder
+metadata:
+  name: keycloak
+  namespace: grafana
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  title: Keycloak
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: keycloak-troubleshooting
+  namespace: grafana
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: keycloak
+  url: https://raw.githubusercontent.com/keycloak/keycloak-grafana-dashboard/26.4.0/dashboards/keycloak-troubleshooting-dashboard.json
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: keycloak-capacity-planning
+  namespace: grafana
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: keycloak
+  url: https://raw.githubusercontent.com/keycloak/keycloak-grafana-dashboard/26.4.0/dashboards/keycloak-capacity-planning-dashboard.json
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus

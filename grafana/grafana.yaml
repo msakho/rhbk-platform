@@ -1,0 +1,73 @@
+# Grafana instance managed by the Grafana Operator, behind the OpenShift OAuth proxy:
+# users log in with their OpenShift account; only users allowed to "get services" in the
+# "grafana" namespace (cluster admins) get in. No Grafana login form.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: grafana
+  namespace: grafana
+  labels:
+    dashboards: grafana
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  config:
+    log:
+      mode: console
+    auth:
+      disable_login_form: "true"
+      disable_signout_menu: "true"
+    auth.basic:
+      enabled: "true"          # used by the operator to call the Grafana API (service port 3000)
+    auth.proxy:
+      enabled: "true"
+      header_name: X-Forwarded-User
+      header_property: username
+      auto_sign_up: "true"
+    users:
+      auto_assign_org_role: Editor
+  serviceAccount:
+    metadata:
+      annotations:
+        serviceaccounts.openshift.io/oauth-redirectreference.primary: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"grafana"}}'
+  deployment:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: grafana-proxy
+              image: image-registry.openshift-image-registry.svc:5000/openshift/oauth-proxy:v4.4
+              args:
+                - -provider=openshift
+                - -https-address=:9091
+                - -http-address=
+                - -email-domain=*
+                - -upstream=http://localhost:3000
+                - -openshift-service-account=grafana-sa
+                - '-openshift-sar={"namespace":"grafana","resource":"services","verb":"get"}'
+                - -tls-cert=/etc/tls/private/tls.crt
+                - -tls-key=/etc/tls/private/tls.key
+                - -cookie-secret-file=/etc/proxy/cookie/password
+                - -pass-basic-auth=false
+              ports:
+                - name: proxy-https
+                  containerPort: 9091
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+              volumeMounts:
+                - name: proxy-tls
+                  mountPath: /etc/tls/private
+                  readOnly: true
+                - name: proxy-cookie
+                  mountPath: /etc/proxy/cookie
+                  readOnly: true
+          volumes:
+            - name: proxy-tls
+              secret:
+                secretName: grafana-proxy-tls
+            - name: proxy-cookie
+              secret:
+                secretName: grafana-proxy-cookie

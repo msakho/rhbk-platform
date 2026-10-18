@@ -1,0 +1,34 @@
+# Service in front of the OAuth proxy (the service-ca generates its certificate) and route.
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-proxy
+  namespace: grafana
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: grafana-proxy-tls
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  selector:
+    app: grafana
+  ports:
+    - name: proxy-https
+      port: 9091
+      targetPort: 9091
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: grafana
+  namespace: grafana
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  host: grafana.apps.cluster-nnljw.nnljw.sandbox742.opentlc.com
+  to:
+    kind: Service
+    name: grafana-proxy
+  port:
+    targetPort: proxy-https
+  tls:
+    termination: reencrypt
+    insecureEdgeTerminationPolicy: Redirect
