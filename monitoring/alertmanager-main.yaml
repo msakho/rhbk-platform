@@ -1,0 +1,47 @@
+# Configuration of the platform Alertmanager (it also receives the user workload alerts).
+# Keeps the OpenShift defaults (Default / Watchdog / Critical receivers, inhibit rules) and adds a
+# route for the RHBK alerts, placed before "Critical" so that our critical alerts are delivered too.
+# Receiver "rhbk-team": test webhook for now; SMTP later (guide, section 15.7).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-main
+  namespace: openshift-monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+type: Opaque
+stringData:
+  alertmanager.yaml: |
+    global:
+      http_config:
+        proxy_from_environment: true
+    inhibit_rules:
+      - equal: [namespace, alertname]
+        source_matchers: ["severity = critical"]
+        target_matchers: ["severity =~ warning|info"]
+      - equal: [namespace, alertname]
+        source_matchers: ["severity = warning"]
+        target_matchers: ["severity = info"]
+    route:
+      receiver: Default
+      group_by: [namespace]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      routes:
+        - matchers: ["alertname = Watchdog"]
+          receiver: Watchdog
+        # RHBK: Keycloak/PostgreSQL (rhbk, rhbk-dev, rhbk-<env>), Vault, ESO, ArgoCD.
+        - matchers: ['namespace =~ "rhbk(-.+)?|vault|external-secrets|openshift-gitops"']
+          receiver: rhbk-team
+          group_by: [namespace, alertname]
+        - matchers: ["severity = critical"]
+          receiver: Critical
+    receivers:
+      - name: Default
+      - name: Watchdog
+      - name: Critical
+      - name: rhbk-team
+        webhook_configs:
+          - url: http://alert-webhook.alert-webhook-test.svc:8080/
+            send_resolved: true

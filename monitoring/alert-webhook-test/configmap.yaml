@@ -1,0 +1,35 @@
+# Minimal Alertmanager webhook receiver: prints one line per alert in the pod logs.
+# Test receiver only, to validate the alert chain until the real channel (SMTP) is configured.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-webhook
+  namespace: alert-webhook-test
+data:
+  receiver.py: |
+    import datetime, http.server, json
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            try:
+                msg = json.loads(body)
+                for a in msg.get("alerts", []):
+                    l = a.get("labels", {})
+                    print(datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                          a.get("status", "").upper(), l.get("severity", "-"), l.get("alertname"),
+                          "ns=" + l.get("exported_namespace", l.get("namespace", "-")),
+                          "|", a.get("annotations", {}).get("summary", ""), flush=True)
+            except ValueError:
+                print("non-JSON payload:", body[:300], flush=True)
+            self.send_response(200)
+            self.end_headers()
+
+        def do_GET(self):  # readiness
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    http.server.HTTPServer(("", 8080), Handler).serve_forever()

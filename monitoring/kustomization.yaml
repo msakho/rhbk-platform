@@ -10,3 +10,5 @@ resources:
   - eso-alerts.yaml
   - vault-alerts.yaml
   - argocd-alerts.yaml
+  - alertmanager-main.yaml
+  - alert-webhook-test

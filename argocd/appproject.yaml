@@ -23,6 +23,8 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: openshift-user-workload-monitoring
     - server: https://kubernetes.default.svc
+      namespace: alert-webhook-test
+    - server: https://kubernetes.default.svc
       namespace: external-secrets
     - server: https://kubernetes.default.svc
       namespace: openshift-gitops
