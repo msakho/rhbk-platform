@@ -16,7 +16,7 @@ data:
                 msg = json.loads(body)
                 for a in msg.get("alerts", []):
                     l = a.get("labels", {})
-                    print(datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                    print(datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                           a.get("status", "").upper(), l.get("severity", "-"), l.get("alertname"),
                           "ns=" + l.get("exported_namespace", l.get("namespace", "-")),
                           "|", a.get("annotations", {}).get("summary", ""), flush=True)
