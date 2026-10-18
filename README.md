@@ -154,6 +154,12 @@ cluster), avec le rôle Grafana *Editor*. Pas de formulaire de connexion Grafana
 Ordre : Sync `grafana-operator`, puis `grafana` (l'Application réessaie seule si l'instance est encore
 en cours de démarrage).
 
+**Identifiant de la source de données** : l'opérateur remplace l'entrée `DS_PROMETHEUS` des tableaux par
+la valeur `datasourceName` (`Prometheus`) **dans le champ uid**. La source de données a donc l'uid fixe
+`Prometheus` (`grafana/datasource.yaml`) ; sans cela, la variable `namespace` reste vide et les panneaux
+n'affichent rien. `spec.uid` est immuable : pour le changer, supprimer le `GrafanaDatasource` puis
+resynchroniser.
+
 Mettre à jour les tableaux de bord : changer la version dans les URL de `grafana/dashboards.yaml`.
 Les modifications faites dans l'interface sur ces tableaux sont écrasées par l'opérateur.
 
