@@ -26,6 +26,8 @@ argocd/
     vault.yaml                   chart Helm hashicorp/vault 0.34.1 + vault/values.yaml -> namespace vault
     eso-config.yaml              eso/ (ExternalSecretsConfig + ClusterSecretStore)
     platform-monitoring.yaml     monitoring/ -> surveillance des projets utilisateur + alertes plateforme
+    grafana-operator.yaml        operators/grafana -> namespace grafana (opérateur communautaire)
+    grafana.yaml                 grafana/ -> instance Grafana, source Thanos, tableaux de bord Keycloak
 operators/
   rhbk/base/                     Namespace, OperatorGroup, Subscription (canal stable-v26.6)
   rhbk/overlays/prod|dev/        namespace, nom de l'OperatorGroup existant
@@ -35,6 +37,14 @@ eso/
   clustersecretstore.yaml        vault-store : ESO -> Vault (auth Kubernetes)
 vault/
   values.yaml                    Vault 1 nœud, stockage Raft sur PVC, route
+operators/grafana/               Namespace, OperatorGroup, Subscription (canal v5, community-operators)
+grafana/
+  grafana.yaml                   instance Grafana (image figée) + proxy OAuth OpenShift
+  proxy-service-route.yaml       Service du proxy (certificat service-ca) + route reencrypt
+  proxy-cookie-secret.yaml       secret de session du proxy, généré par ESO (générateur Password)
+  datasource-serviceaccount.yaml ServiceAccount en lecture seule (cluster-monitoring-view) + jeton
+  datasource.yaml                source de données Thanos Querier (plateforme + projets utilisateur)
+  dashboards.yaml                dossier "Keycloak" + 2 tableaux de bord officiels (version 26.4.0)
 monitoring/
   cluster-monitoring-config.yaml active la surveillance des projets utilisateur (enableUserWorkload)
   user-workload-monitoring-config.yaml  rétention 7 jours, PVC de 5 Gi par réplique Prometheus
@@ -72,6 +82,7 @@ monitoring/
 | 4 | **Manuel** : initialiser, desceller et configurer Vault, ranger les valeurs | voir « Vault : étapes manuelles » |
 | 5 | Sync `eso-config` | `oc get clustersecretstore vault-store` → `Valid` |
 | 6 | Sync `rhbk-operator-prod`, `rhbk-operator-dev` | CSV `rhbk-operator` en `Succeeded` dans chaque namespace |
+| 7a | Sync `grafana-operator` puis `grafana` | `https://grafana.apps.<domaine>` : page « Log in with OpenShift » |
 | 7 | Sync `platform-monitoring` | pods `prometheus-user-workload-*` et `thanos-ruler-user-workload-*` en `Running` |
 | 8 | Dépôt `rhbk-gitops` : bootstrap applicatif | voir son guide |
 
@@ -125,6 +136,26 @@ section 15.7.2 (paramètres SMTP dans Vault, `secret/platform/alertmanager/smtp`
   `exported_namespace`.
 - **ArgoCD** : `openshift-gitops` est un namespace plateforme ; sa règle est évaluée par le Prometheus de
   la plateforme.
+
+## Grafana
+
+URL : `https://grafana.apps.cluster-nnljw.nnljw.sandbox742.opentlc.com` → **Log in with OpenShift**.
+Accès réservé aux comptes autorisés à lire les services du namespace `grafana` (administrateurs du
+cluster), avec le rôle Grafana *Editor*. Pas de formulaire de connexion Grafana.
+
+| Élément | Détail |
+|---|---|
+| Opérateur | Grafana Operator v5 (**communautaire**, non supporté par Red Hat) |
+| Image Grafana | figée par digest dans `grafana/grafana.yaml` (l'opérateur l'écrit dans le CR) |
+| Métriques | Thanos Querier, ServiceAccount `grafana-thanos` (`cluster-monitoring-view`), jeton généré par OpenShift |
+| Tableaux de bord | officiels Keycloak (*Troubleshooting*, *Capacity planning*), version `26.4.0` du dépôt `keycloak/keycloak-grafana-dashboard`, téléchargés par l'opérateur ; filtre par `namespace` (`rhbk`, `rhbk-dev`) |
+| Secrets | aucun dans git : jeton créé par OpenShift, secret de session du proxy généré par ESO |
+
+Ordre : Sync `grafana-operator`, puis `grafana` (l'Application réessaie seule si l'instance est encore
+en cours de démarrage).
+
+Mettre à jour les tableaux de bord : changer la version dans les URL de `grafana/dashboards.yaml`.
+Les modifications faites dans l'interface sur ces tableaux sont écrasées par l'opérateur.
 
 ## Vault : étapes manuelles
 
