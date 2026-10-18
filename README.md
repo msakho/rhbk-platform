@@ -28,6 +28,8 @@ argocd/
     platform-monitoring.yaml     monitoring/ -> surveillance des projets utilisateur + alertes plateforme
     grafana-operator.yaml        operators/grafana -> namespace grafana (opérateur communautaire)
     grafana.yaml                 grafana/ -> instance Grafana, source Thanos, tableaux de bord Keycloak
+    coo-operator.yaml            operators/coo -> Cluster Observability Operator (Red Hat)
+    observability-console.yaml   observability-console/ -> plugin Perses de la console + vue d'ensemble RHBK
 operators/
   rhbk/base/                     Namespace, OperatorGroup, Subscription (canal stable-v26.6)
   rhbk/overlays/prod|dev/        namespace, nom de l'OperatorGroup existant
@@ -38,6 +40,12 @@ eso/
 vault/
   values.yaml                    Vault 1 nœud, stockage Raft sur PVC, route
 operators/grafana/               Namespace, OperatorGroup, Subscription (canal v5, community-operators)
+operators/coo/                   Namespace, OperatorGroup, Subscription (canal stable, redhat-operators)
+observability-console/
+  uiplugin-monitoring.yaml       UIPlugin "monitoring" (Perses activé) : tableaux Perses dans la console
+  namespace.yaml                 projet rhbk-observability
+  datasource.yaml                source par défaut du projet : Thanos Querier (jeton de l'utilisateur connecté)
+  dashboard-rhbk-overview.yaml   vue d'ensemble RHBK (13 panneaux, généré en JSON)
 grafana/
   grafana.yaml                   instance Grafana (image figée) + proxy OAuth OpenShift
   proxy-service-route.yaml       Service du proxy (certificat service-ca) + route reencrypt
@@ -82,6 +90,7 @@ monitoring/
 | 4 | **Manuel** : initialiser, desceller et configurer Vault, ranger les valeurs | voir « Vault : étapes manuelles » |
 | 5 | Sync `eso-config` | `oc get clustersecretstore vault-store` → `Valid` |
 | 6 | Sync `rhbk-operator-prod`, `rhbk-operator-dev` | CSV `rhbk-operator` en `Succeeded` dans chaque namespace |
+| 7b | Sync `coo-operator` puis `observability-console` | console : Observe → Dashboards (Perses) → `rhbk-observability` |
 | 7a | Sync `grafana-operator` puis `grafana` | `https://grafana.apps.<domaine>` : page « Log in with OpenShift » |
 | 7 | Sync `platform-monitoring` | pods `prometheus-user-workload-*` et `thanos-ruler-user-workload-*` en `Running` |
 | 8 | Dépôt `rhbk-gitops` : bootstrap applicatif | voir son guide |
@@ -136,6 +145,22 @@ section 15.7.2 (paramètres SMTP dans Vault, `secret/platform/alertmanager/smtp`
   `exported_namespace`.
 - **ArgoCD** : `openshift-gitops` est un namespace plateforme ; sa règle est évaluée par le Prometheus de
   la plateforme.
+
+## Vue d'ensemble dans la console (Perses)
+
+Console OpenShift → **Observe → Dashboards (Perses)** → projet **`rhbk-observability`** →
+**RHBK - vue d'ensemble**. Fourni par le Cluster Observability Operator (Red Hat).
+
+| Section | Panneaux |
+|---|---|
+| État | pods Keycloak et PostgreSQL prêts (prod / dev), Vault prêt (= descellé), ExternalSecrets en erreur, Applications ArgoCD non saines, alertes RHBK actives |
+| Keycloak : trafic | requêtes/s, taux de 5xx, temps de réponse p95, connexions réussies et échouées (prod et dev superposés) |
+| Keycloak : ressources | connexions à la base, mémoire JVM, CPU |
+
+La source de données interroge Thanos Querier **avec le jeton de l'utilisateur de la console** : chacun ne
+voit que les métriques qu'il a le droit de voir, sans ServiceAccount ni jeton à gérer.
+
+Grafana (section suivante) garde les tableaux officiels détaillés de Keycloak ; Perses donne la synthèse.
 
 ## Grafana
 
