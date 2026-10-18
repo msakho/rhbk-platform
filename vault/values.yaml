@@ -19,6 +19,10 @@ server:
   ha:
     enabled: true
     replicas: 1
+    # No PodDisruptionBudget: with a single replica the chart's PDB (maxUnavailable: 0) allows no
+    # disruption at all and blocks node drains during OpenShift upgrades.
+    disruptionBudget:
+      enabled: false
     raft:
       enabled: true
       setNodeId: true
