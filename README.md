@@ -37,6 +37,7 @@ vault/
   values.yaml                    Vault 1 nœud, stockage Raft sur PVC, route
 monitoring/
   cluster-monitoring-config.yaml active la surveillance des projets utilisateur (enableUserWorkload)
+  user-workload-monitoring-config.yaml  rétention 7 jours, PVC de 5 Gi par réplique Prometheus
   eso-servicemonitor.yaml        collecte des métriques ESO
   eso-alerts.yaml                ExternalSecretNotSynced, ClusterSecretStoreNotReady
   vault-alerts.yaml              VaultSealedOrDown (pod Vault non prêt = scellé)
@@ -104,6 +105,10 @@ PrometheusRules hors des namespaces `openshift-*` sont ignorés) et ajoute les a
 Les alertes Keycloak sont dans le dépôt applicatif (guide, sections 5.6 et 15.6). Alertes visibles dans
 la console : **Observe → Alerting**. Aucun destinataire de notification n'est encore configuré.
 
+- **Stockage** : les 2 Prometheus des projets utilisateur ont chacun un PVC de 5 Gi
+  (`ocs-storagecluster-ceph-rbd`), rétention 7 jours (`retentionSize: 4GB` en garde-fou). Les métriques
+  survivent aux redémarrages du cluster. Environ 4 000 séries aujourd'hui : quelques centaines de Mo
+  sur 7 jours. Le volume peut être agrandi (la classe de stockage le permet).
 - **Vault** n'expose pas de métriques : un Vault scellé est détecté par son pod non prêt.
 - **ESO** : les NetworkPolicies de l'opérateur autorisent déjà la collecte depuis
   `openshift-user-workload-monitoring` ; le namespace de chaque ExternalSecret est dans le label
