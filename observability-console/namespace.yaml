@@ -1,0 +1,7 @@
+# Project holding the RHBK overview dashboard (Perses) shown in the OpenShift console.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rhbk-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"

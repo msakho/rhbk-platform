@@ -1,0 +1,30 @@
+# Default datasource of the project: Thanos Querier (platform + user workload metrics).
+# Same settings as the datasources created by COO: TLS with the service CA; Perses forwards the
+# token of the user logged in to the console (each user only sees what they are allowed to see).
+apiVersion: perses.dev/v1alpha2
+kind: PersesDatasource
+metadata:
+  name: rhbk-thanos
+  namespace: rhbk-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  client:
+    tls:
+      enable: true
+      caCert:
+        type: file
+        certPath: /ca/service-ca.crt
+  config:
+    default: true
+    display:
+      name: Thanos Querier (RHBK)
+    plugin:
+      kind: PrometheusDatasource
+      spec:
+        proxy:
+          kind: HTTPProxy
+          spec:
+            url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
+            secret: rhbk-thanos-secret

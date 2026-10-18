@@ -11,3 +11,4 @@ resources:
   - applications/grafana-operator.yaml
   - applications/grafana.yaml
   - applications/coo-operator.yaml
+  - applications/observability-console.yaml
