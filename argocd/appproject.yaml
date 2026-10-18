@@ -27,6 +27,8 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: grafana
     - server: https://kubernetes.default.svc
+      namespace: openshift-cluster-observability-operator
+    - server: https://kubernetes.default.svc
       namespace: external-secrets
     - server: https://kubernetes.default.svc
       namespace: openshift-gitops
