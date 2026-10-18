@@ -18,6 +18,9 @@ spec:
         secretKeyRef:
           name: grafana-thanos-token
           key: token
+  # Fixed uid (immutable): the operator writes the datasourceName mapped in GrafanaDashboard
+  # ("Prometheus") into the dashboards' datasource uid, so the datasource must have this uid.
+  uid: Prometheus
   datasource:
     name: Prometheus
     type: prometheus
