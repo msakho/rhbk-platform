@@ -17,3 +17,11 @@ spec:
     # Platform: manual sync (review the diff, then Sync).
     syncOptions:
       - ServerSideApply=true
+    # The Grafana CR is briefly reported as failed while the instance starts: retry instead of
+    # stopping before the datasource and dashboards waves.
+    retry:
+      limit: 5
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 3m

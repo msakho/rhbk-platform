@@ -12,6 +12,9 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
+  # Grafana image pinned by digest (default image of grafana-operator v5.25.0). Declared here
+  # because the operator writes it into the CR: without it ArgoCD reports OutOfSync.
+  version: docker.io/grafana/grafana@sha256:ab5cb380e3ff3172d6c8bd2e7cfd31cce977d2881b260e1f5bc089bf0b759b43
   config:
     log:
       mode: console
