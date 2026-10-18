@@ -1,0 +1,22 @@
+# Persistent storage and retention for the user workload Prometheus (2 replicas: one PVC each).
+# Without it, metrics are kept 24h in an emptyDir and lost at each cluster restart.
+# ~4000 series today (Keycloak prod/dev, ESO): 7 days take a few hundred MB.
+# retentionSize is a safety net below the PVC size; ceph-rbd allows volume expansion.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-workload-monitoring-config
+  namespace: openshift-user-workload-monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  config.yaml: |
+    prometheus:
+      retention: 7d
+      retentionSize: 4GB
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ocs-storagecluster-ceph-rbd
+          resources:
+            requests:
+              storage: 5Gi

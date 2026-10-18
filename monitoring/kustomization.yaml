@@ -5,6 +5,7 @@ labels:
       app.kubernetes.io/part-of: rhbk-platform
 resources:
   - cluster-monitoring-config.yaml
+  - user-workload-monitoring-config.yaml
   - eso-servicemonitor.yaml
   - eso-alerts.yaml
   - vault-alerts.yaml
