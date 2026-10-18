@@ -1,0 +1,71 @@
+# NOT deployed (not referenced by monitoring/kustomization.yaml): ready-to-use replacement for
+# monitoring/alertmanager-main.yaml when the SMTP server is available (guide, section 15.7).
+# ESO builds the whole alertmanager.yaml from Vault (secret/platform/alertmanager/smtp):
+# no SMTP password in git. ESO takes over the existing alertmanager-main Secret (creationPolicy Owner).
+# Same routing as monitoring/alertmanager-main.yaml; receiver rhbk-team sends e-mails.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: alertmanager-main
+  namespace: openshift-monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-store
+  target:
+    name: alertmanager-main
+    creationPolicy: Owner
+    deletionPolicy: Retain
+    template:
+      engineVersion: v2
+      mergePolicy: Replace
+      data:
+        alertmanager.yaml: |
+          global:
+            http_config:
+              proxy_from_environment: true
+            smtp_smarthost: '{{ .smarthost }}'
+            smtp_from: '{{ .from }}'
+            smtp_auth_username: '{{ .username }}'
+            smtp_auth_password: '{{ .password }}'
+            smtp_require_tls: true
+          inhibit_rules:
+            - equal: [namespace, alertname]
+              source_matchers: ["severity = critical"]
+              target_matchers: ["severity =~ warning|info"]
+            - equal: [namespace, alertname]
+              source_matchers: ["severity = warning"]
+              target_matchers: ["severity = info"]
+          route:
+            receiver: Default
+            group_by: [namespace]
+            group_wait: 30s
+            group_interval: 5m
+            repeat_interval: 12h
+            routes:
+              - matchers: ["alertname = Watchdog"]
+                receiver: Watchdog
+              - matchers: ['namespace =~ "rhbk(-.+)?|vault|external-secrets|openshift-gitops"']
+                receiver: rhbk-team
+                group_by: [namespace, alertname]
+              - matchers: ["severity = critical"]
+                receiver: Critical
+          receivers:
+            - name: Default
+            - name: Watchdog
+            - name: Critical
+            - name: rhbk-team
+              email_configs:
+                - to: '{{ .to }}'
+                  send_resolved: true
+  dataFrom:
+    - extract:
+        key: platform/alertmanager/smtp
+        conversionStrategy: Default
+        decodingStrategy: None
+        metadataPolicy: None
+        nullBytePolicy: Ignore

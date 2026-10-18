@@ -42,6 +42,9 @@ monitoring/
   eso-alerts.yaml                ExternalSecretNotSynced, ClusterSecretStoreNotReady
   vault-alerts.yaml              VaultSealedOrDown (pod Vault non prêt = scellé)
   argocd-alerts.yaml             ArgoCDApplicationUnhealthy
+  alertmanager-main.yaml         configuration d'Alertmanager : route des alertes RHBK vers "rhbk-team"
+  alert-webhook-test/            récepteur de test (webhook qui écrit les alertes dans ses logs)
+  examples/alertmanager-main-smtp.yaml   modèle SMTP (ExternalSecret, non déployé) pour passer à l'e-mail
 ```
 
 ## Choix
@@ -103,7 +106,14 @@ actuelle.
 `platform-monitoring` active la surveillance des projets utilisateur (sans elle, les ServiceMonitors et
 PrometheusRules hors des namespaces `openshift-*` sont ignorés) et ajoute les alertes de la plateforme.
 Les alertes Keycloak sont dans le dépôt applicatif (guide, sections 5.6 et 15.6). Alertes visibles dans
-la console : **Observe → Alerting**. Aucun destinataire de notification n'est encore configuré.
+la console : **Observe → Alerting**.
+
+**Notifications** : `alertmanager-main.yaml` route les alertes des namespaces `rhbk*`, `vault`,
+`external-secrets` et `openshift-gitops` vers le destinataire `rhbk-team` (les destinataires par défaut
+d'OpenShift sont conservés). Aujourd'hui `rhbk-team` est le **webhook de test** (`oc logs -n
+alert-webhook-test deploy/alert-webhook`). Pour passer à l'e-mail : modèle
+`monitoring/examples/alertmanager-main-smtp.yaml`, procédure dans le guide de `rhbk-gitops`,
+section 15.7.2 (paramètres SMTP dans Vault, `secret/platform/alertmanager/smtp`).
 
 - **Stockage** : les 2 Prometheus des projets utilisateur ont chacun un PVC de 5 Gi
   (`ocs-storagecluster-ceph-rbd`), rétention 7 jours (`retentionSize: 4GB` en garde-fou). Les métriques
