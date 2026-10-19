@@ -21,7 +21,7 @@ spec:
       caName: openshift-service-ca.crt
   retention:
     global:
-      traces: 72h
+      traces: 72h0m0s   # normalized form (the API rewrites "72h")
   tenants:
     mode: openshift
     authentication:
