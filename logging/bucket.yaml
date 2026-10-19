@@ -1,0 +1,12 @@
+# S3 bucket for Loki, provided by ODF (NooBaa / Multicloud Object Gateway). NooBaa creates the
+# bucket and writes its credentials into Secret "loki-bucket" (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY).
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: loki-bucket
+  namespace: openshift-logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  storageClassName: openshift-storage.noobaa.io
+  bucketName: loki-rhbk

@@ -1,0 +1,29 @@
+# Log store. Size 1x.demo: smallest, no high availability (sandbox). Production: 1x.pico or larger.
+# Object storage: NooBaa bucket (logging-loki-s3), TLS with the OpenShift service CA.
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: logging-loki
+  namespace: openshift-logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  size: 1x.demo
+  storageClassName: ocs-storagecluster-ceph-rbd
+  storage:
+    schemas:
+      - version: v13
+        effectiveDate: "2026-10-01"
+    secret:
+      name: logging-loki-s3
+      type: s3
+    tls:
+      caName: openshift-service-ca.crt
+      caKey: service-ca.crt
+  limits:
+    global:
+      retention:
+        days: 7
+  tenants:
+    mode: openshift-logging

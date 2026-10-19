@@ -14,3 +14,4 @@ resources:
   - applications/observability-console.yaml
   - applications/logging-operator.yaml
   - applications/loki-operator.yaml
+  - applications/logging.yaml

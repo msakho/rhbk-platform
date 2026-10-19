@@ -1,0 +1,108 @@
+# Collector (Vector) and forwarding to the LokiStack:
+#  - "application" logs: every namespace except openshift-*, kube-*, default
+#    (Keycloak, PostgreSQL, Vault, ESO, Grafana...);
+#  - from the "infrastructure" logs, only the openshift-gitops namespace (ArgoCD).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: collector
+  namespace: openshift-logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: logging-collector-collect-application-logs
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: collect-application-logs
+subjects:
+  - kind: ServiceAccount
+    name: collector
+    namespace: openshift-logging
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: logging-collector-collect-infrastructure-logs
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: collect-infrastructure-logs
+subjects:
+  - kind: ServiceAccount
+    name: collector
+    namespace: openshift-logging
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: logging-collector-logs-writer
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: logging-collector-logs-writer
+subjects:
+  - kind: ServiceAccount
+    name: collector
+    namespace: openshift-logging
+---
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: collector
+  namespace: openshift-logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  serviceAccount:
+    name: collector
+  inputs:
+    - name: infrastructure-containers
+      type: infrastructure
+      infrastructure:
+        sources:
+          - container
+  filters:
+    - name: keep-only-openshift-gitops
+      type: drop
+      drop:
+        - test:
+            - field: .kubernetes.namespace_name
+              notMatches: "^openshift-gitops$"
+  outputs:
+    - name: default-lokistack
+      type: lokiStack
+      lokiStack:
+        target:
+          name: logging-loki
+          namespace: openshift-logging
+        authentication:
+          token:
+            from: serviceAccount
+      tls:
+        ca:
+          configMapName: openshift-service-ca.crt
+          key: service-ca.crt
+  pipelines:
+    - name: applications
+      inputRefs:
+        - application
+      outputRefs:
+        - default-lokistack
+    - name: argocd
+      inputRefs:
+        - infrastructure-containers
+      filterRefs:
+        - keep-only-openshift-gitops
+      outputRefs:
+        - default-lokistack
