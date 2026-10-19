@@ -6,6 +6,7 @@ labels:
 resources:
   - uiplugin-monitoring.yaml
   - uiplugin-logging.yaml
+  - uiplugin-distributed-tracing.yaml
   - namespace.yaml
   - datasource.yaml
   - dashboard-rhbk-overview.yaml

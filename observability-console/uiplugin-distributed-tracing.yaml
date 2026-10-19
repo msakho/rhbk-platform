@@ -1,0 +1,11 @@
+# Console plugin of the Cluster Observability Operator: traces from the TempoStack in the
+# OpenShift console (Observe -> Traces). Needs the "tracing" Application.
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: distributed-tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  type: DistributedTracing
