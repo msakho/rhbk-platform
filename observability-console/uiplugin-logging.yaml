@@ -1,0 +1,16 @@
+# Console plugin of the Cluster Observability Operator: logs from the LokiStack in the OpenShift
+# console (Observe -> Logs, and the "Aggregated Logs" tab of pods). Needs the "logging" Application.
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  type: Logging
+  logging:
+    lokiStack:
+      name: logging-loki
+      namespace: openshift-logging
+    schema: viaq

@@ -5,6 +5,7 @@ labels:
       app.kubernetes.io/part-of: rhbk-platform
 resources:
   - uiplugin-monitoring.yaml
+  - uiplugin-logging.yaml
   - namespace.yaml
   - datasource.yaml
   - dashboard-rhbk-overview.yaml
