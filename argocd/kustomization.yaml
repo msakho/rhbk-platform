@@ -12,3 +12,5 @@ resources:
   - applications/grafana.yaml
   - applications/coo-operator.yaml
   - applications/observability-console.yaml
+  - applications/logging-operator.yaml
+  - applications/loki-operator.yaml

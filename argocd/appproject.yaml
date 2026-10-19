@@ -31,6 +31,10 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: rhbk-observability
     - server: https://kubernetes.default.svc
+      namespace: openshift-logging
+    - server: https://kubernetes.default.svc
+      namespace: openshift-operators-redhat
+    - server: https://kubernetes.default.svc
       namespace: external-secrets
     - server: https://kubernetes.default.svc
       namespace: openshift-gitops

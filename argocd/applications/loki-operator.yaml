@@ -1,0 +1,19 @@
+# Loki Operator (Red Hat, catalog redhat-operators; not the community package with the same name).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki-operator
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/msakho/rhbk-platform.git
+    targetRevision: main
+    path: operators/loki
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-operators-redhat
+  syncPolicy:
+    # Platform: manual sync (review the diff, then Sync).
+    syncOptions:
+      - ServerSideApply=true

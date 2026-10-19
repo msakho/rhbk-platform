@@ -1,0 +1,19 @@
+# Red Hat OpenShift Logging (collector, ClusterLogForwarder).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: logging-operator
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/msakho/rhbk-platform.git
+    targetRevision: main
+    path: operators/logging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-logging
+  syncPolicy:
+    # Platform: manual sync (review the diff, then Sync).
+    syncOptions:
+      - ServerSideApply=true
