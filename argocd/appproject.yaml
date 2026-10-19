@@ -35,6 +35,12 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: openshift-operators-redhat
     - server: https://kubernetes.default.svc
+      namespace: openshift-tempo-operator
+    - server: https://kubernetes.default.svc
+      namespace: openshift-opentelemetry-operator
+    - server: https://kubernetes.default.svc
+      namespace: rhbk-tracing
+    - server: https://kubernetes.default.svc
       namespace: external-secrets
     - server: https://kubernetes.default.svc
       namespace: openshift-gitops

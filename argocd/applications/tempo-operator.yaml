@@ -1,0 +1,19 @@
+# Tempo Operator (Red Hat build of Tempo): trace storage.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tempo-operator
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/msakho/rhbk-platform.git
+    targetRevision: main
+    path: operators/tempo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-tempo-operator
+  syncPolicy:
+    # Platform: manual sync (review the diff, then Sync).
+    syncOptions:
+      - ServerSideApply=true

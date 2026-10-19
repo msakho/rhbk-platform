@@ -1,0 +1,19 @@
+# Red Hat build of OpenTelemetry: OpenTelemetry Collector.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-operator
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/msakho/rhbk-platform.git
+    targetRevision: main
+    path: operators/otel
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-opentelemetry-operator
+  syncPolicy:
+    # Platform: manual sync (review the diff, then Sync).
+    syncOptions:
+      - ServerSideApply=true

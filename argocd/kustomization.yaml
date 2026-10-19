@@ -15,3 +15,5 @@ resources:
   - applications/logging-operator.yaml
   - applications/loki-operator.yaml
   - applications/logging.yaml
+  - applications/tempo-operator.yaml
+  - applications/otel-operator.yaml
