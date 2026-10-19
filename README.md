@@ -29,7 +29,7 @@ argocd/
     grafana-operator.yaml        operators/grafana -> namespace grafana (opérateur communautaire)
     grafana.yaml                 grafana/ -> instance Grafana, source Thanos, tableaux de bord Keycloak
     coo-operator.yaml            operators/coo -> Cluster Observability Operator (Red Hat)
-    observability-console.yaml   observability-console/ -> plugins de la console (Perses, Logs) + vue d'ensemble RHBK
+    observability-console.yaml   observability-console/ -> plugin Perses de la console + vue d'ensemble RHBK
     logging-operator.yaml        operators/logging -> Red Hat OpenShift Logging (stable-6.6)
     loki-operator.yaml           operators/loki -> Loki Operator Red Hat (stable-6.6)
     logging.yaml                 logging/ -> bucket NooBaa, LokiStack, ClusterLogForwarder
@@ -53,6 +53,7 @@ logging/
   loki-s3-secret.yaml            conversion des identifiants du bucket au format LokiStack (ESO, fournisseur kubernetes)
   lokistack.yaml                 LokiStack logging-loki, taille 1x.demo, rétention 7 jours
   clusterlogforwarder.yaml       collecteur : logs application + openshift-gitops (ArgoCD) -> LokiStack
+  uiplugin-logging.yaml          UIPlugin "logging" : logs dans la console (Observe -> Logs)
 operators/tempo/                 Namespace openshift-tempo-operator, OperatorGroup, Subscription (tempo-product)
 operators/otel/                  Namespace openshift-opentelemetry-operator, OperatorGroup, Subscription (opentelemetry-product)
 tracing/
@@ -60,11 +61,10 @@ tracing/
   tempo-s3-secret.yaml           conversion des identifiants du bucket au format TempoStack (ESO, fournisseur kubernetes)
   tempostack.yaml                TempoStack tempo (1x.demo, rétention 72 h, tenant rhbk) + ClusterRoles writer/reader
   collector.yaml                 OpenTelemetry Collector otel (OTLP 4317/4318 -> passerelle Tempo, jeton du ServiceAccount)
+  uiplugin-distributed-tracing.yaml  UIPlugin "distributed-tracing" : traces dans la console (Observe -> Traces)
 operators/coo/                   Namespace, OperatorGroup, Subscription (canal stable, redhat-operators)
 observability-console/
   uiplugin-monitoring.yaml       UIPlugin "monitoring" (Perses activé) : tableaux Perses dans la console
-  uiplugin-logging.yaml          UIPlugin "logging" : logs dans la console (Observe -> Logs)
-  uiplugin-distributed-tracing.yaml  UIPlugin "distributed-tracing" : traces dans la console (Observe -> Traces)
   namespace.yaml                 projet rhbk-observability
   datasource.yaml                source par défaut du projet : Thanos Querier (jeton de l'utilisateur connecté)
   dashboard-rhbk-overview.yaml   vue d'ensemble RHBK (13 panneaux, généré en JSON)
@@ -114,10 +114,13 @@ monitoring/
 | 6 | Sync `rhbk-operator-prod`, `rhbk-operator-dev` | CSV `rhbk-operator` en `Succeeded` dans chaque namespace |
 | 7 | Sync `platform-monitoring` (surveillance des projets utilisateur, alertes, Alertmanager) | pods `prometheus-user-workload-*` et `thanos-ruler-user-workload-*` en `Running` |
 | 8 | Sync `grafana-operator`, puis `grafana` | `https://grafana.apps.<domaine>` : page « Log in with OpenShift » |
-| 9 | Sync `loki-operator` et `logging-operator`, puis `logging` | `oc get lokistack logging-loki -n openshift-logging` : Ready ; pods `collector-*` sur chaque nœud |
-| 10 | Sync `tempo-operator` et `otel-operator`, puis `tracing` | `oc get tempostack tempo -n rhbk-tracing` : Ready ; pod `otel-collector-*` Running |
-| 11 | Sync `coo-operator`, puis `observability-console` (plugins Perses, Logs, Traces : après les étapes 9 et 10) | console : Observe → Dashboards (Perses), Logs, Traces |
+| 9 | Sync `coo-operator`, puis `observability-console` (vue d'ensemble Perses) | console : Observe → Dashboards (Perses) → `rhbk-observability` |
+| 10 | Sync `loki-operator` et `logging-operator`, puis `logging` (plugin Logs inclus : après `coo-operator`) | `oc get lokistack logging-loki -n openshift-logging` : Ready ; pods `collector-*` sur chaque nœud ; Observe → Logs |
+| 11 | Sync `tempo-operator` et `otel-operator`, puis `tracing` (plugin Traces inclus : après `coo-operator`) | `oc get tempostack tempo -n rhbk-tracing` : Ready ; pod `otel-collector-*` Running ; Observe → Traces |
 | 12 | Dépôt `rhbk-gitops` : bootstrap applicatif | voir son guide (l'annexe D récapitule toute l'observabilité) |
+
+Les étapes 7 à 11 (observabilité) sont décrites **partie par partie**, avec le contenu de chaque fichier et
+la possibilité de n'en déployer qu'une partie, dans `rhbk-gitops/docs/observabilite.md`.
 
 Les annotations `SkipDryRunOnMissingResource` permettent de créer les Applications avant que les CRD
 (ESO) n'existent ; la synchro de `eso-config` doit simplement venir après `eso-operator`.
