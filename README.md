@@ -29,7 +29,10 @@ argocd/
     grafana-operator.yaml        operators/grafana -> namespace grafana (opérateur communautaire)
     grafana.yaml                 grafana/ -> instance Grafana, source Thanos, tableaux de bord Keycloak
     coo-operator.yaml            operators/coo -> Cluster Observability Operator (Red Hat)
-    observability-console.yaml   observability-console/ -> plugin Perses de la console + vue d'ensemble RHBK
+    observability-console.yaml   observability-console/ -> plugins de la console (Perses, Logs) + vue d'ensemble RHBK
+    logging-operator.yaml        operators/logging -> Red Hat OpenShift Logging (stable-6.6)
+    loki-operator.yaml           operators/loki -> Loki Operator Red Hat (stable-6.6)
+    logging.yaml                 logging/ -> bucket NooBaa, LokiStack, ClusterLogForwarder
 operators/
   rhbk/base/                     Namespace, OperatorGroup, Subscription (canal stable-v26.6)
   rhbk/overlays/prod|dev/        namespace, nom de l'OperatorGroup existant
@@ -40,9 +43,17 @@ eso/
 vault/
   values.yaml                    Vault 1 nœud, stockage Raft sur PVC, route
 operators/grafana/               Namespace, OperatorGroup, Subscription (canal v5, community-operators)
+operators/logging/               Namespace openshift-logging, OperatorGroup, Subscription (cluster-logging)
+operators/loki/                  Namespace openshift-operators-redhat, OperatorGroup, Subscription (loki-operator, Red Hat)
+logging/
+  bucket.yaml                    ObjectBucketClaim NooBaa (bucket loki-rhbk)
+  loki-s3-secret.yaml            conversion des identifiants du bucket au format LokiStack (ESO, fournisseur kubernetes)
+  lokistack.yaml                 LokiStack logging-loki, taille 1x.demo, rétention 7 jours
+  clusterlogforwarder.yaml       collecteur : logs application + openshift-gitops (ArgoCD) -> LokiStack
 operators/coo/                   Namespace, OperatorGroup, Subscription (canal stable, redhat-operators)
 observability-console/
   uiplugin-monitoring.yaml       UIPlugin "monitoring" (Perses activé) : tableaux Perses dans la console
+  uiplugin-logging.yaml          UIPlugin "logging" : logs dans la console (Observe -> Logs)
   namespace.yaml                 projet rhbk-observability
   datasource.yaml                source par défaut du projet : Thanos Querier (jeton de l'utilisateur connecté)
   dashboard-rhbk-overview.yaml   vue d'ensemble RHBK (13 panneaux, généré en JSON)
@@ -90,6 +101,7 @@ monitoring/
 | 4 | **Manuel** : initialiser, desceller et configurer Vault, ranger les valeurs | voir « Vault : étapes manuelles » |
 | 5 | Sync `eso-config` | `oc get clustersecretstore vault-store` → `Valid` |
 | 6 | Sync `rhbk-operator-prod`, `rhbk-operator-dev` | CSV `rhbk-operator` en `Succeeded` dans chaque namespace |
+| 7c | Sync `loki-operator`, `logging-operator`, puis `logging` | `oc get lokistack logging-loki -n openshift-logging` : Ready ; pods `collector-*` sur chaque nœud |
 | 7b | Sync `coo-operator` puis `observability-console` | console : Observe → Dashboards (Perses) → `rhbk-observability` |
 | 7a | Sync `grafana-operator` puis `grafana` | `https://grafana.apps.<domaine>` : page « Log in with OpenShift » |
 | 7 | Sync `platform-monitoring` | pods `prometheus-user-workload-*` et `thanos-ruler-user-workload-*` en `Running` |
@@ -145,6 +157,20 @@ section 15.7.2 (paramètres SMTP dans Vault, `secret/platform/alertmanager/smtp`
   `exported_namespace`.
 - **ArgoCD** : `openshift-gitops` est un namespace plateforme ; sa règle est évaluée par le Prometheus de
   la plateforme.
+
+## Logs centralisés (OpenShift Logging + Loki)
+
+Console : **Observe → Logs** (ou onglet **Aggregated Logs** d'un pod).
+
+| Élément | Détail |
+|---|---|
+| Collecte | Vector sur chaque nœud (`collector-*`), `ClusterLogForwarder collector` |
+| Périmètre | logs **application** (tous les namespaces hors `openshift-*`, `kube-*`, `default` : Keycloak, PostgreSQL, Vault, ESO, Grafana…) + parmi l'**infrastructure**, seulement `openshift-gitops` (ArgoCD), grâce à un filtre `drop` |
+| Stockage | `LokiStack logging-loki`, taille **1x.demo** (pas de haute disponibilité : l'avertissement « ingester replicas (1) » est attendu ; production : 1x.pico ou plus), rétention 7 jours |
+| Stockage objet | bucket NooBaa `loki-rhbk` (ObjectBucketClaim). Les identifiants générés par NooBaa sont convertis au format attendu par Loki par un ExternalSecret (fournisseur `kubernetes` d'ESO) : rien dans git, rien à recopier |
+| Tenants | `application` et `infrastructure` (mode `openshift-logging`) : chacun ne voit que les logs des namespaces auxquels il a accès |
+
+Ordre : Sync `loki-operator` et `logging-operator`, puis `logging`, puis `observability-console`.
 
 ## Vue d'ensemble dans la console (Perses)
 
