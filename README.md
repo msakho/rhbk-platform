@@ -106,18 +106,18 @@ monitoring/
 
 | Étape | Application / action | Vérification |
 |---|---|---|
-| 1 | `oc apply -f bootstrap/root-app.yaml` | `oc get applications -n openshift-gitops` : les 5 Applications existent |
+| 1 | `oc apply -f bootstrap/root-app.yaml` | `oc get applications -n openshift-gitops` : les 16 Applications de la plateforme existent |
 | 2 | Sync `eso-operator` | CSV `openshift-external-secrets-operator` en `Succeeded` |
 | 3 | Sync `vault` | pod `vault-0` `Running` (non prêt : scellé) |
 | 4 | **Manuel** : initialiser, desceller et configurer Vault, ranger les valeurs | voir « Vault : étapes manuelles » |
 | 5 | Sync `eso-config` | `oc get clustersecretstore vault-store` → `Valid` |
 | 6 | Sync `rhbk-operator-prod`, `rhbk-operator-dev` | CSV `rhbk-operator` en `Succeeded` dans chaque namespace |
-| 7d | Sync `tempo-operator`, `otel-operator`, puis `tracing` | `oc get tempostack tempo -n rhbk-tracing` : Ready ; pod `otel-collector-*` Running |
-| 7c | Sync `loki-operator`, `logging-operator`, puis `logging` | `oc get lokistack logging-loki -n openshift-logging` : Ready ; pods `collector-*` sur chaque nœud |
-| 7b | Sync `coo-operator` puis `observability-console` | console : Observe → Dashboards (Perses) → `rhbk-observability` |
-| 7a | Sync `grafana-operator` puis `grafana` | `https://grafana.apps.<domaine>` : page « Log in with OpenShift » |
-| 7 | Sync `platform-monitoring` | pods `prometheus-user-workload-*` et `thanos-ruler-user-workload-*` en `Running` |
-| 8 | Dépôt `rhbk-gitops` : bootstrap applicatif | voir son guide |
+| 7 | Sync `platform-monitoring` (surveillance des projets utilisateur, alertes, Alertmanager) | pods `prometheus-user-workload-*` et `thanos-ruler-user-workload-*` en `Running` |
+| 8 | Sync `grafana-operator`, puis `grafana` | `https://grafana.apps.<domaine>` : page « Log in with OpenShift » |
+| 9 | Sync `loki-operator` et `logging-operator`, puis `logging` | `oc get lokistack logging-loki -n openshift-logging` : Ready ; pods `collector-*` sur chaque nœud |
+| 10 | Sync `tempo-operator` et `otel-operator`, puis `tracing` | `oc get tempostack tempo -n rhbk-tracing` : Ready ; pod `otel-collector-*` Running |
+| 11 | Sync `coo-operator`, puis `observability-console` (plugins Perses, Logs, Traces : après les étapes 9 et 10) | console : Observe → Dashboards (Perses), Logs, Traces |
+| 12 | Dépôt `rhbk-gitops` : bootstrap applicatif | voir son guide (l'annexe D récapitule toute l'observabilité) |
 
 Les annotations `SkipDryRunOnMissingResource` permettent de créer les Applications avant que les CRD
 (ESO) n'existent ; la synchro de `eso-config` doit simplement venir après `eso-operator`.
