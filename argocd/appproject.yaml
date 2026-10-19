@@ -54,6 +54,8 @@ spec:
     - group: observability.openshift.io
       kind: UIPlugin
     - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
       kind: ClusterRoleBinding     # Vault chart: auth-delegator for the Kubernetes auth method
   namespaceResourceWhitelist:
     - group: "*"

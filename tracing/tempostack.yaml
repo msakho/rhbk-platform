@@ -1,0 +1,61 @@
+# Trace store. Size 1x.demo (sandbox, no high availability). Multi-tenant "openshift" mode:
+# a gateway authenticates writers and readers with their OpenShift token; single tenant "rhbk"
+# for prod and dev (environments are told apart by the k8s.namespace.name attribute).
+apiVersion: tempo.grafana.com/v1alpha1
+kind: TempoStack
+metadata:
+  name: tempo
+  namespace: rhbk-tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  size: 1x.demo
+  storageClassName: ocs-storagecluster-ceph-rbd
+  storage:
+    secret:
+      name: tempo-s3
+      type: s3
+    tls:
+      enabled: true
+      caName: openshift-service-ca.crt
+  retention:
+    global:
+      traces: 72h
+  tenants:
+    mode: openshift
+    authentication:
+      - tenantName: rhbk
+        tenantId: 1e5c2f3a-9d1b-4f6e-8a7c-2b4d6e8f0a12
+  template:
+    gateway:
+      enabled: true
+    queryFrontend:
+      jaegerQuery:
+        enabled: true
+---
+# Allows writing traces to tenant "rhbk" (used by the collector) ...
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tempostack-rhbk-traces-writer
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+rules:
+  - apiGroups: ["tempo.grafana.com"]
+    resources: ["rhbk"]
+    resourceNames: ["traces"]
+    verbs: ["create"]
+---
+# ... and reading them (bind it to users or groups who must see traces; cluster admins already can).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tempostack-rhbk-traces-reader
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+rules:
+  - apiGroups: ["tempo.grafana.com"]
+    resources: ["rhbk"]
+    resourceNames: ["traces"]
+    verbs: ["get"]

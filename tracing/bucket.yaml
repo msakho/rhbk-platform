@@ -1,0 +1,11 @@
+# S3 bucket for Tempo (ODF / NooBaa). Credentials written by NooBaa into Secret "tempo-bucket".
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: tempo-bucket
+  namespace: rhbk-tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  storageClassName: openshift-storage.noobaa.io
+  bucketName: tempo-rhbk

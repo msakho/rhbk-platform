@@ -17,3 +17,4 @@ resources:
   - applications/logging.yaml
   - applications/tempo-operator.yaml
   - applications/otel-operator.yaml
+  - applications/tracing.yaml

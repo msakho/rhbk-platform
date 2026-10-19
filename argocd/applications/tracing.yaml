@@ -1,0 +1,26 @@
+# Trace store (TempoStack on a NooBaa bucket) and OpenTelemetry Collector, namespace rhbk-tracing.
+# Needs tempo-operator and otel-operator.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tracing
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/msakho/rhbk-platform.git
+    targetRevision: main
+    path: tracing
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rhbk-tracing
+  syncPolicy:
+    # Platform: manual sync (review the diff, then Sync).
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 6
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 5m
