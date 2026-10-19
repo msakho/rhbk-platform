@@ -1,5 +1,6 @@
 # Console plugin of the Cluster Observability Operator: traces from the TempoStack in the
-# OpenShift console (Observe -> Traces). Needs the "tracing" Application.
+# OpenShift console (Observe -> Traces). Part of the traces (part 4); needs the Cluster
+# Observability Operator (coo-operator) for the UIPlugin CRD.
 apiVersion: observability.openshift.io/v1alpha1
 kind: UIPlugin
 metadata:

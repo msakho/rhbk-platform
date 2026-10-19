@@ -1,5 +1,5 @@
 # Log store (LokiStack on a NooBaa bucket) and log forwarding (ClusterLogForwarder).
-# Needs logging-operator and loki-operator.
+# Needs logging-operator and loki-operator, and coo-operator for the Logs console plugin.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

@@ -1,5 +1,5 @@
 # Trace store (TempoStack on a NooBaa bucket) and OpenTelemetry Collector, namespace rhbk-tracing.
-# Needs tempo-operator and otel-operator.
+# Needs tempo-operator and otel-operator, and coo-operator for the Traces console plugin.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

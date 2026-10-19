@@ -8,3 +8,4 @@ resources:
   - loki-s3-secret.yaml
   - lokistack.yaml
   - clusterlogforwarder.yaml
+  - uiplugin-logging.yaml

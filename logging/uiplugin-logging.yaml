@@ -1,5 +1,6 @@
 # Console plugin of the Cluster Observability Operator: logs from the LokiStack in the OpenShift
-# console (Observe -> Logs, and the "Aggregated Logs" tab of pods). Needs the "logging" Application.
+# console (Observe -> Logs, and the "Aggregated Logs" tab of pods). Part of the logs (part 3);
+# needs the Cluster Observability Operator (coo-operator) for the UIPlugin CRD.
 apiVersion: observability.openshift.io/v1alpha1
 kind: UIPlugin
 metadata:

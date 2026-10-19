@@ -9,3 +9,4 @@ resources:
   - tempo-s3-secret.yaml
   - tempostack.yaml
   - collector.yaml
+  - uiplugin-distributed-tracing.yaml

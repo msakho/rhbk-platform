@@ -1,4 +1,5 @@
-# COO console plugin (Perses) and the RHBK overview dashboard. Needs coo-operator.
+# RHBK overview dashboard (Perses) in the console (part 2: dashboards). Needs coo-operator.
+# The Logs and Traces console plugins belong to the "logging" and "tracing" Applications.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
