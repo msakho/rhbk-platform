@@ -33,6 +33,9 @@ argocd/
     logging-operator.yaml        operators/logging -> Red Hat OpenShift Logging (stable-6.6)
     loki-operator.yaml           operators/loki -> Loki Operator Red Hat (stable-6.6)
     logging.yaml                 logging/ -> bucket NooBaa, LokiStack, ClusterLogForwarder
+    tempo-operator.yaml          operators/tempo -> Tempo Operator (Red Hat)
+    otel-operator.yaml           operators/otel -> Red Hat build of OpenTelemetry
+    tracing.yaml                 tracing/ -> bucket NooBaa, TempoStack, OpenTelemetry Collector
 operators/
   rhbk/base/                     Namespace, OperatorGroup, Subscription (canal stable-v26.6)
   rhbk/overlays/prod|dev/        namespace, nom de l'OperatorGroup existant
@@ -50,10 +53,18 @@ logging/
   loki-s3-secret.yaml            conversion des identifiants du bucket au format LokiStack (ESO, fournisseur kubernetes)
   lokistack.yaml                 LokiStack logging-loki, taille 1x.demo, rétention 7 jours
   clusterlogforwarder.yaml       collecteur : logs application + openshift-gitops (ArgoCD) -> LokiStack
+operators/tempo/                 Namespace openshift-tempo-operator, OperatorGroup, Subscription (tempo-product)
+operators/otel/                  Namespace openshift-opentelemetry-operator, OperatorGroup, Subscription (opentelemetry-product)
+tracing/
+  bucket.yaml                    ObjectBucketClaim NooBaa (bucket tempo-rhbk)
+  tempo-s3-secret.yaml           conversion des identifiants du bucket au format TempoStack (ESO, fournisseur kubernetes)
+  tempostack.yaml                TempoStack tempo (1x.demo, rétention 72 h, tenant rhbk) + ClusterRoles writer/reader
+  collector.yaml                 OpenTelemetry Collector otel (OTLP 4317/4318 -> passerelle Tempo, jeton du ServiceAccount)
 operators/coo/                   Namespace, OperatorGroup, Subscription (canal stable, redhat-operators)
 observability-console/
   uiplugin-monitoring.yaml       UIPlugin "monitoring" (Perses activé) : tableaux Perses dans la console
   uiplugin-logging.yaml          UIPlugin "logging" : logs dans la console (Observe -> Logs)
+  uiplugin-distributed-tracing.yaml  UIPlugin "distributed-tracing" : traces dans la console (Observe -> Traces)
   namespace.yaml                 projet rhbk-observability
   datasource.yaml                source par défaut du projet : Thanos Querier (jeton de l'utilisateur connecté)
   dashboard-rhbk-overview.yaml   vue d'ensemble RHBK (13 panneaux, généré en JSON)
@@ -101,6 +112,7 @@ monitoring/
 | 4 | **Manuel** : initialiser, desceller et configurer Vault, ranger les valeurs | voir « Vault : étapes manuelles » |
 | 5 | Sync `eso-config` | `oc get clustersecretstore vault-store` → `Valid` |
 | 6 | Sync `rhbk-operator-prod`, `rhbk-operator-dev` | CSV `rhbk-operator` en `Succeeded` dans chaque namespace |
+| 7d | Sync `tempo-operator`, `otel-operator`, puis `tracing` | `oc get tempostack tempo -n rhbk-tracing` : Ready ; pod `otel-collector-*` Running |
 | 7c | Sync `loki-operator`, `logging-operator`, puis `logging` | `oc get lokistack logging-loki -n openshift-logging` : Ready ; pods `collector-*` sur chaque nœud |
 | 7b | Sync `coo-operator` puis `observability-console` | console : Observe → Dashboards (Perses) → `rhbk-observability` |
 | 7a | Sync `grafana-operator` puis `grafana` | `https://grafana.apps.<domaine>` : page « Log in with OpenShift » |
@@ -171,6 +183,27 @@ Console : **Observe → Logs** (ou onglet **Aggregated Logs** d'un pod).
 | Tenants | `application` et `infrastructure` (mode `openshift-logging`) : chacun ne voit que les logs des namespaces auxquels il a accès |
 
 Ordre : Sync `loki-operator` et `logging-operator`, puis `logging`, puis `observability-console`.
+
+## Traces (OpenTelemetry + Tempo)
+
+Console : **Observe → Traces** (instance `rhbk-tracing/tempo`, tenant `rhbk`).
+
+```
+Keycloak ──OTLP gRPC 4317──▶ otel-collector (rhbk-tracing) ──OTLP + jeton──▶ passerelle Tempo ──▶ bucket tempo-rhbk
+```
+
+| Élément | Détail |
+|---|---|
+| Collector | `OpenTelemetryCollector otel` : récepteurs OTLP gRPC 4317 / HTTP 4318, processeurs `memory_limiter`, `k8sattributes`, `batch` ; exporte vers la passerelle Tempo avec le jeton de son ServiceAccount (`otel-collector`, ClusterRole `tempostack-rhbk-traces-writer`) |
+| Stockage | `TempoStack tempo`, taille **1x.demo** (pas de haute disponibilité), rétention 72 h, bucket NooBaa `tempo-rhbk` |
+| Multi-location | mode `openshift`, un tenant `rhbk` (prod et dev, distingués par `service.name` = `rhbk-prod` / `rhbk-dev` et `k8s.namespace.name`) |
+| Lecture | administrateurs du cluster ; pour d'autres utilisateurs, lier le ClusterRole `tempostack-rhbk-traces-reader` |
+| Keycloak | `tracing-enabled` est une option **de build** (image) ; adresse du Collector et ratio d'échantillonnage dans le CR (`spec.tracing`) : 100 % en dev, 10 % en prod |
+
+Valeur de rétention écrite sous sa forme normalisée (`72h0m0s`) : l'API réécrit `72h`, ce qui laisserait
+l'Application `OutOfSync`.
+
+Ordre : Sync `tempo-operator` et `otel-operator`, puis `tracing`, puis `observability-console`.
 
 ## Vue d'ensemble dans la console (Perses)
 
