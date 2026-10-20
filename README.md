@@ -152,7 +152,7 @@ actuelle.
 
 `platform-monitoring` active la surveillance des projets utilisateur (sans elle, les ServiceMonitors et
 PrometheusRules hors des namespaces `openshift-*` sont ignorés) et ajoute les alertes de la plateforme.
-Les alertes Keycloak sont dans le dépôt applicatif (guide, sections 5.6 et 15.6). Alertes visibles dans
+Les alertes Keycloak sont dans le dépôt applicatif (`docs/observabilite.md`, étape 1.3, et guide, section 15.6). Alertes visibles dans
 la console : **Observe → Alerting**.
 
 **Notifications** : `alertmanager-main.yaml` route les alertes des namespaces `rhbk*`, `vault`,
