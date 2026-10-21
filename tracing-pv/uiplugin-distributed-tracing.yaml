@@ -1,0 +1,12 @@
+# Console plugin of the Cluster Observability Operator: traces from the Tempo instance in the
+# OpenShift console (Observe -> Traces). Part of the traces (part 4); needs the Cluster
+# Observability Operator (coo-operator) for the UIPlugin CRD.
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: distributed-tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  type: DistributedTracing

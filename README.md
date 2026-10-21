@@ -35,7 +35,8 @@ argocd/
     logging.yaml                 logging/ -> bucket NooBaa, LokiStack, ClusterLogForwarder
     tempo-operator.yaml          operators/tempo -> Tempo Operator (Red Hat)
     otel-operator.yaml           operators/otel -> Red Hat build of OpenTelemetry
-    tracing.yaml                 tracing/ -> bucket NooBaa, TempoStack, OpenTelemetry Collector
+    tracing.yaml                 tracing/ -> bucket NooBaa, TempoStack, OpenTelemetry Collector (traces, option A)
+    tracing-pv.yaml              tracing-pv/ -> TempoMonolithic sur PVC, Collector (traces, option B ; non listée par défaut)
 operators/
   rhbk/base/                     Namespace, OperatorGroup, Subscription (canal stable-v26.6)
   rhbk/overlays/prod|dev/        namespace, nom de l'OperatorGroup existant
@@ -62,6 +63,10 @@ tracing/
   tempostack.yaml                TempoStack tempo (1x.demo, rétention 72 h, tenant rhbk) + ClusterRoles writer/reader
   collector.yaml                 OpenTelemetry Collector otel (OTLP 4317/4318 -> passerelle Tempo, jeton du ServiceAccount)
   uiplugin-distributed-tracing.yaml  UIPlugin "distributed-tracing" : traces dans la console (Observe -> Traces)
+tracing-pv/                      traces, option B (remplace tracing/, jamais les deux)
+  tempomonolithic.yaml           TempoMonolithic tempo (PVC 10 Gi, rétention 72 h, tenant rhbk) + ClusterRoles writer/reader
+  collector.yaml                 Collector identique à tracing/, export vers la passerelle sur le port 4317
+  namespace.yaml, uiplugin-distributed-tracing.yaml  identiques à tracing/
 operators/coo/                   Namespace, OperatorGroup, Subscription (canal stable, redhat-operators)
 observability-console/
   uiplugin-monitoring.yaml       UIPlugin "monitoring" (Perses activé) : tableaux Perses dans la console
@@ -207,6 +212,12 @@ Valeur de rétention écrite sous sa forme normalisée (`72h0m0s`) : l'API réé
 l'Application `OutOfSync`.
 
 Ordre : Sync `tempo-operator` et `otel-operator`, puis `tracing`, puis `observability-console`.
+
+**Option B, sans stockage objet** : Application `tracing-pv` (dossier `tracing-pv/`), un
+`TempoMonolithic` qui écrit les traces sur un PVC classique (un seul pod, pas de haute disponibilité).
+Elle **remplace** `tracing` (même namespace, même Collector, mêmes droits) : lister l'une ou l'autre
+dans `argocd/kustomization.yaml`. Comparaison, déploiement et passage de A à B :
+`docs/observabilite.md` du dépôt applicatif, étape 4.3.
 
 ## Vue d'ensemble dans la console (Perses)
 

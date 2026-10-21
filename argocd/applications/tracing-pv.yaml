@@ -1,0 +1,27 @@
+# Traces, option B (docs/observabilite.md, part 4): TempoMonolithic on a persistent volume and
+# OpenTelemetry Collector, namespace rhbk-tracing. Replaces the "tracing" Application (option A):
+# list one or the other in argocd/kustomization.yaml, never both. Not listed by default.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tracing-pv
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/msakho/rhbk-platform.git
+    targetRevision: main
+    path: tracing-pv
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rhbk-tracing
+  syncPolicy:
+    # Platform: manual sync (review the diff, then Sync).
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 6
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 5m

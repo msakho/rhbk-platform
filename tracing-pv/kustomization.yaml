@@ -1,0 +1,13 @@
+# Option B of the traces (part 4): TempoMonolithic on a persistent volume, no object storage.
+# Replaces tracing/ (option A, TempoStack on S3): deploy one or the other, never both
+# (same namespace, Collector and ClusterRoles). Keycloak is unchanged (same Collector address).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: rhbk-platform
+resources:
+  - namespace.yaml
+  - tempomonolithic.yaml
+  - collector.yaml
+  - uiplugin-distributed-tracing.yaml
