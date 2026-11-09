@@ -268,13 +268,51 @@ Ce qui n'est pas déclaratif dans ce dépôt (détail des commandes : guide de `
 | Étape | Quand | Guide `rhbk-gitops` |
 |---|---|---|
 | Initialiser (clé de descellement + token root → `vault-init.json`, ignoré par git) | une fois, cluster neuf | annexe A.4 |
-| Desceller | **après chaque redémarrage du pod ou du cluster** | annexe A.4, section 15.5 |
+| Desceller | automatique sur le sandbox (voir ci-dessous) ; à la main si le conteneur `auto-unseal` échoue | annexe A.4, section 15.5 |
+| Créer le Secret `vault-unseal-key` (descellement automatique) | une fois, après l'initialisation | ci-dessous |
 | Configurer : KV v2 `secret/`, auth Kubernetes, politique `rhbk-read`, rôle `external-secrets` | une fois | annexe A.5 |
 | Ranger les valeurs d'un environnement (`secret/rhbk/<env>/...`) | par environnement | annexe A.7 |
 
 `vault-init.json` (clé de descellement et token root) est conservé **dans le dossier local de ce dépôt**
 (`/usr/local/dev/rhbk-platform`), ignoré par git ; les commandes manuelles se lancent depuis ce dossier.
 **Le sauvegarder** : sans la clé de descellement, les données de Vault sont irrécupérables.
+
+### Descellement automatique (sandbox uniquement)
+
+Le pod `vault-0` contient un conteneur annexe `auto-unseal` (`server.extraContainers` dans
+`vault/values.yaml`). Toutes les 10 secondes, il vérifie l'état de Vault (`vault status`, code
+de sortie 2 = scellé) et le descelle avec la clé du Secret `vault-unseal-key`. Comme il fait partie
+du pod, il redémarre avec lui : plus de commande manuelle après un redémarrage du cluster.
+
+Créer le Secret une fois, après l'initialisation (clé lue dans `vault-init.json`, jamais affichée,
+jamais dans git ; ESO ne peut pas le fournir puisqu'il dépend de Vault) :
+
+```bash
+python3 -c 'import json;print(json.load(open("vault-init.json"))["unseal_keys_b64"][0],end="")' | oc create secret generic vault-unseal-key -n vault --from-file=key=/dev/stdin
+```
+
+Le StatefulSet Vault est en `updateStrategy: OnDelete` : après une modification de
+`vault/values.yaml` et la synchronisation, supprimer le pod pour qu'il soit recréé avec la nouvelle
+définition :
+
+```bash
+oc delete pod vault-0 -n vault
+```
+
+Vérifier :
+
+```bash
+oc logs vault-0 -n vault -c auto-unseal
+```
+
+```bash
+oc exec -n vault vault-0 -c vault -- vault status | grep Sealed
+```
+
+**Limite de sécurité** : la clé est stockée dans le même cluster que les données qu'elle protège.
+Quiconque peut lire ce Secret (ou une sauvegarde etcd) peut desceller Vault. Acceptable pour un
+sandbox ; en production, utiliser le descellement automatique natif de Vault (bloc `seal "awskms"`,
+`"transit"`…), avec la clé hors du cluster.
 
 ## Ajouter un environnement (exemple : `qualif`)
 
