@@ -1,6 +1,6 @@
 # Deployed by the ArgoCD Application "vault" (argocd/applications/vault.yaml).
 # HashiCorp Vault for ESO, sandbox setup: 1 node, integrated Raft storage on a PVC
-# (data survives cluster restarts; Vault must be unsealed after each pod restart).
+# (data survives cluster restarts; unsealed after each pod restart by the auto-unseal sidecar).
 global:
   openshift: true
 
@@ -40,6 +40,41 @@ server:
         }
 
         service_registration "kubernetes" {}
+  # Automatic unseal, SANDBOX ONLY: this sidecar restarts with the Vault pod and unseals Vault
+  # with the key stored in Secret "vault-unseal-key" (created by hand, never in git, see README).
+  # The key lives in the same cluster as the data it protects: anyone who can read this Secret
+  # (or an etcd backup) can unseal Vault. Production: seal "awskms" / "transit" instead.
+  extraContainers:
+    - name: auto-unseal
+      image: docker.io/hashicorp/vault:2.0.4
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          export VAULT_ADDR=http://127.0.0.1:8200
+          while true; do
+            vault status >/dev/null 2>&1
+            # exit code 2 = sealed (0 = unsealed, 1 = error / Vault not started yet)
+            if [ $? -eq 2 ]; then
+              vault operator unseal "$UNSEAL_KEY" >/dev/null && echo "$(date -u +%FT%TZ) unsealed"
+            fi
+            sleep 10
+          done
+      env:
+        - name: UNSEAL_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-unseal-key
+              key: key
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
   route:
     enabled: true
     host: vault.apps.cluster-nnljw.nnljw.sandbox742.opentlc.com
